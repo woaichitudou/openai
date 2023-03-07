@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ChatGPT 聊天界面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="./index.css" />
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="message-container">
+        <div class="message other">
+          <img src="./ai.png" alt="" />
+          <p>你好！我是 openai ChatGPT ，您有一切不懂的问题都可以向我提问 ，我会尽我所能回答您</p>
+        </div>
+      </div>
+      <div class="input-container">
+        <input id="input" type="text" placeholder="请输入消息..." />
+        <button id="button">发送</button>
+      </div>
+    </div>
+  </body>
+  <script>
+    const apiKey = "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";
+    const apiUrl = "https://api.openai.com/v1/chat/completions";
+
+    const messages = [];
+    const input = document.getElementById("input");
+    const button = document.getElementById("button");
+    const messageContainer = document.getElementsByClassName("message-container")[0];
+
+    const userMessage = (text) => `<p>${text}</p><img src="./user.png" alt="" />`;
+
+    const aiMessage = (text) => `<img src="./ai.png" alt="" /><p>${text}</p>`;
+
+    const loading = () => `
+        <img src="./ai.png" alt="" />
+          <p>
+            疯狂的查找答案中
+            <div class="loading">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+          </p>
+        `;
+
+    button.onclick = () => {
+      setostData();
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.keyCode === 13) {
+        setostData();
+      }
+    });
+
+    const setostData = () => {
+      const message = input.value;
+      if (message) {
+        messages.push({ role: "user", content: message });
+        input.value = "";
+        sendRequest();
+        appenSelf(message);
+        appendLoading();
+      }
+    };
+
+    const sendRequest = () => {
+      const data = {
+        model: "gpt-3.5-turbo",
+        messages: messages,
+      };
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(data),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            console.log(response);
+            throw new Error(response.error.message);
+            appendOther(response.error.message);
+            emoveLoading();
+            scrollbt();
+          }
+          return response.json();
+        })
+        .then((json) => {
+          removeLoading();
+          appendOther(json.choices[0].message.content);
+          scrollbt();
+        })
+        .catch((error) => {
+          console.error(error);
+          removeLoading();
+          appendOther(error.error.message);
+          scrollbt();
+        });
+    };
+
+    const removeLoading = () => {
+      const loding = document.getElementsByClassName("loding")[0];
+      if (loding) loding.remove();
+    };
+
+    const appendOther = (text) => {
+      const newMessageElement = document.createElement("div");
+      newMessageElement.className = `message other`;
+      newMessageElement.innerHTML = aiMessage(text);
+      messageContainer.appendChild(newMessageElement);
+    };
+
+    const appendLoading = () => {
+      const newLoadingElement = document.createElement("div");
+      newLoadingElement.className = `message other loding`;
+      newLoadingElement.innerHTML = loading();
+      messageContainer.appendChild(newLoadingElement);
+    };
+
+    const appenSelf = (text) => {
+      const newMessageElement = document.createElement("div");
+      newMessageElement.className = `message self`;
+      newMessageElement.innerHTML = userMessage(text);
+      messageContainer.appendChild(newMessageElement);
+    };
+
+    const scrollbt = () => {
+      setTimeout(() => {
+        // 将滚动条滚动到底部
+        messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
+      }, 500);
+    };
+  </script>
+</html>
